@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CROSSCHECK — live agent network map</title>
+<style>
+  :root{--bg:#060a10;--fg:#e8f0f4;--muted:rgba(232,240,244,.6);--aqua:#2de2c6;--blue:#4aa8ff;--amber:#ffcf4d;--red:#ff3366;--jade:#5ef0a8;--mono:"SF Mono",ui-monospace,Menlo,monospace}
+  *{box-sizing:border-box} html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:var(--mono);overflow:hidden}
+  #c{display:block;width:100vw;height:100vh}
+  .hud{position:fixed;top:14px;left:16px;z-index:5}
+  .hud .t{font-size:1.1rem;font-weight:700;letter-spacing:.02em}
+  .hud .t .c{color:var(--aqua)}
+  .hud .s{font-size:.78rem;color:var(--muted);margin-top:.2rem}
+  .legend{position:fixed;bottom:14px;left:16px;z-index:5;font-size:.74rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap}
+  .legend b{display:inline-block;width:.7em;height:.7em;border-radius:50%;margin-right:.3em;vertical-align:middle}
+  a{position:fixed;top:14px;right:16px;z-index:5;color:var(--aqua);font-size:.78rem;text-decoration:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hud"><div class="t"><span class="c">CROSS</span>CHECK · live network</div><div class="s" id="s">loading the wire…</div></div>
+<a href="/">← home</a>
+<div class="legend">
+  <span><b style="background:#2de2c6"></b>house</span>
+  <span><b style="background:#5ef0a8"></b>A reachable</span>
+  <span><b style="background:#4aa8ff"></b>B/C</span>
+  <span><b style="background:#ff9a3d"></b>D</span>
+  <span><b style="background:#ff3366"></b>F ghost</span>
+  <span><b style="background:#5a6472"></b>idle</span>
+</div>
+<script>
+const cv=document.getElementById("c"),ctx=cv.getContext("2d");
+let W,H; function size(){W=cv.width=innerWidth*devicePixelRatio;H=cv.height=innerHeight*devicePixelRatio;ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);}
+addEventListener("resize",size);size();
+const COL={house:"#2de2c6",A:"#5ef0a8",B:"#4aa8ff",C:"#4aa8ff",D:"#ff9a3d",F:"#ff3366",idle:"#5a6472"};
+let nodes=[],edges=[],byId={};
+function ingest(g){
+  const old=byId; byId={};
+  nodes=g.nodes.map(n=>{const p=old[n.id]||{x:innerWidth/2+(Math.random()-.5)*300,y:innerHeight/2+(Math.random()-.5)*300,vx:0,vy:0};const o={...n,x:p.x,y:p.y,vx:p.vx,vy:p.vy,r:n.id==="switchboard"?13:6+Math.min(10,(n.in+n.out)*0.6)};byId[n.id]=o;return o;});
+  edges=g.edges.filter(e=>byId[e.from]&&byId[e.to]);
+}
+async function load(){
+  try{const d=await(await fetch("/api/scan?mode=room")).json();ingest(d.graph);
+    document.getElementById("s").textContent=`${d.totals.agents} agents · ${d.totals.calls} calls · ${d.totals.completes} completed · ${d.unreachable.length} ghosts`;
+  }catch(e){}
+}
+load();setInterval(load,15000);
+function step(){
+  for(let i=0;i<nodes.length;i++){const a=nodes[i];
+    for(let j=i+1;j<nodes.length;j++){const b=nodes[j];let dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy+0.01;let f=900/d2;let d=Math.sqrt(d2);a.vx+=f*dx/d;a.vy+=f*dy/d;b.vx-=f*dx/d;b.vy-=f*dy/d;}
+    a.vx+=(innerWidth/2-a.x)*0.0012;a.vy+=(innerHeight/2-a.y)*0.0012;
+  }
+  for(const e of edges){const a=byId[e.from],b=byId[e.to];let dx=b.x-a.x,dy=b.y-a.y,d=Math.sqrt(dx*dx+dy*dy)+.01;let f=(d-90)*0.01;a.vx+=f*dx/d;a.vy+=f*dy/d;b.vx-=f*dx/d;b.vy-=f*dy/d;}
+  for(const n of nodes){n.vx*=0.85;n.vy*=0.85;n.x+=n.vx;n.y+=n.vy;}
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.lineWidth=1;
+  for(const e of edges){const a=byId[e.from],b=byId[e.to];ctx.strokeStyle="rgba(232,240,244,"+Math.min(.5,.08+e.n*0.05)+")";ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+  for(const n of nodes){
+    ctx.beginPath();ctx.arc(n.x,n.y,n.r,0,7);ctx.fillStyle=COL[n.g]||"#888";
+    if(n.id==="switchboard"){ctx.shadowColor="#2de2c6";ctx.shadowBlur=22;}ctx.fill();ctx.shadowBlur=0;
+    if(n.r>9||n.id==="switchboard"){ctx.fillStyle="rgba(232,240,244,.85)";ctx.font="11px ui-monospace,Menlo,monospace";ctx.fillText(n.id.slice(0,18),n.x+n.r+3,n.y+3);}
+  }
+}
+(function loop(){step();draw();requestAnimationFrame(loop);})();
+</script>
+</body>
+</html>

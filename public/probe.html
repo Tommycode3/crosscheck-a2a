@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CROSSCHECK console — test your agent, site & domain</title>
+<style>
+  :root{--bg:#060a10;--fg:#e8f0f4;--muted:rgba(232,240,244,.6);--aqua:#2de2c6;--blue:#4aa8ff;--amber:#ffcf4d;--red:#ff3366;--jade:#5ef0a8;--line:rgba(232,240,244,.13);--surf:rgba(232,240,244,.04);--mono:"SF Mono",ui-monospace,Menlo,monospace}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:940px;margin:0 auto;padding:clamp(1.4rem,5vw,3rem) clamp(1rem,5vw,2rem) 5rem}
+  a{color:var(--aqua);text-decoration:none}
+  .eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow .dot{color:var(--aqua)}
+  h1{font-size:clamp(2rem,7vw,3.4rem);font-weight:850;letter-spacing:-.03em;margin:.3rem 0 0}
+  h1 .c{color:var(--aqua)}
+  .sub{color:var(--muted);max-width:56ch;margin:.7rem 0 0}
+  .callout{margin-top:1.2rem;border:1px solid var(--aqua);background:rgba(45,226,198,.06);border-radius:10px;padding:.7rem .9rem;font-size:.9rem}
+  .callout b{color:var(--aqua)}
+  h2{font-size:.76rem;font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:2.2rem 0 .7rem;border-top:1px solid var(--line);padding-top:1rem}
+  .grid{display:grid;gap:.9rem;grid-template-columns:1fr}
+  @media(min-width:780px){.grid3{grid-template-columns:repeat(3,1fr)}}
+  .tool{border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:1rem;display:flex;flex-direction:column;gap:.55rem}
+  .tool .ic{font-size:1.3rem}
+  .tool .nm{font-weight:700} .tool .nm .a{color:var(--aqua)}.tool .nm .b{color:var(--blue)}.tool .nm .y{color:var(--amber)}
+  .tool .d{color:var(--muted);font-size:.82rem;min-height:2.4em}
+  .tool input{background:#03060a;border:1px solid var(--line);color:var(--fg);font-family:var(--mono);font-size:.82rem;padding:.6rem .65rem;border-radius:7px;width:100%}
+  .tool button{font-family:var(--mono);font-size:.84rem;font-weight:600;padding:.6rem;border-radius:7px;cursor:pointer;border:1px solid var(--aqua);background:var(--aqua);color:var(--bg)}
+  .tool .mine{font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+  .tool .mine b{color:var(--aqua);cursor:pointer}
+  #out{margin-top:1.4rem}
+  .sc{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+  .score{font-family:var(--mono);font-weight:800;font-size:2.6rem;line-height:1}
+  .gA{color:var(--jade)}.gB{color:var(--aqua)}.gC{color:var(--amber)}.gD{color:#ff9a3d}.gF{color:var(--red)}
+  .card{border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:1.2rem}
+  .findings{margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem}
+  .f{display:grid;grid-template-columns:auto 1fr;gap:.6rem;padding:.5rem .6rem;background:#03060a;border:1px solid var(--line);border-radius:7px;font-size:.88rem}
+  .lvl{font-family:var(--mono);font-size:.64rem;font-weight:700;text-transform:uppercase;padding:.18em .45em;border-radius:4px;height:fit-content}
+  .lvl.pass{color:var(--jade);border:1px solid var(--jade)}.lvl.fail{color:var(--red);border:1px solid var(--red)}
+  .lvl.warn{color:var(--amber);border:1px solid var(--amber)}.lvl.info{color:var(--blue);border:1px solid var(--blue)}
+  .f .det{color:var(--muted);font-size:.82rem}.f .fix{color:var(--aqua);font-size:.8rem;font-family:var(--mono);margin-top:.2rem}
+  .loading{color:var(--amber);font-family:var(--mono);font-size:.85rem}
+  .rcpt{margin-top:.7rem;font-family:var(--mono);font-size:.74rem;color:var(--muted);display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+  .badge{color:var(--jade);border:1px solid var(--jade);border-radius:5px;padding:.1em .45em}
+  pre.cmd{font-family:var(--mono);font-size:.8rem;background:#03060a;border:1px solid var(--line);border-radius:9px;padding:.9rem;overflow:auto;color:#cfe}
+  pre.cmd .c{color:rgba(232,240,244,.4)}
+  .scope{margin-top:2rem;font-family:var(--mono);font-size:.74rem;color:var(--muted);border-top:1px solid var(--line);padding-top:1rem}
+  .row2{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem}
+  textarea{flex:1;min-width:240px;background:#03060a;border:1px solid var(--line);color:var(--fg);font-family:var(--mono);font-size:.75rem;padding:.6rem;border-radius:7px;min-height:64px}
+  .nav{display:flex;gap:1rem;font-family:var(--mono);font-size:.8rem;margin-top:.4rem}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow"><span class="dot">●</span> CROSSCHECK CONSOLE</div>
+  <h1>Test <span class="c">your own</span> stuff.</h1>
+  <p class="sub">Audit your A2A agent, your website, and your domain in seconds — conformance, security, prompt-injection resistance, TLS, DNS. Every scan returns a signed report.</p>
+  <div class="callout">👉 <b>Paste YOUR url below.</b> CROSSCHECK is built for self-assessment: point it at the agent or site <b>you're building tonight</b> and fix what it finds before anyone else calls it.</div>
+  <div class="nav"><a href="/">← home</a><a href="/map">live map ↯</a></div>
+
+  <h2>① test your assets</h2>
+  <div class="grid grid3">
+    <div class="tool">
+      <div class="ic">🤖</div><div class="nm"><span class="a">Your A2A agent</span></div>
+      <div class="d">Conformance + security + prompt-injection red-team of your agent card.</div>
+      <input id="i_card" placeholder="https://you.dev/.well-known/agent-card.json"/>
+      <button onclick="run('card')">Audit agent</button>
+      <div class="mine">mine: <b onclick="fill('i_card','https://crosstalk-agent.vercel.app/.well-known/agent-card.json')">switchboard</b></div>
+    </div>
+    <div class="tool">
+      <div class="ic">🌐</div><div class="nm"><span class="b">Your website</span></div>
+      <div class="d">Security headers, exposed .env/.git, cookies, clickjacking, version leaks.</div>
+      <input id="i_web" placeholder="https://yoursite.com/"/>
+      <button onclick="run('web')">Scan site</button>
+      <div class="mine">mine: <b onclick="fill('i_web','https://crosstalk-agent.vercel.app/')">this site</b></div>
+    </div>
+    <div class="tool">
+      <div class="ic">📡</div><div class="nm"><span class="y">Your domain</span></div>
+      <div class="d">DNS, TLS cert + protocol, SPF/DMARC email security, CAA, security.txt.</div>
+      <input id="i_infra" placeholder="yourdomain.com"/>
+      <button onclick="run('infra')">Audit domain</button>
+      <div class="mine">mine: <b onclick="fill('i_infra','shoparete.com')">shoparete.com</b></div>
+    </div>
+  </div>
+
+  <div id="out"></div>
+
+  <h2>② your machine (WiFi, firewall, ports)</h2>
+  <div class="card">
+    <p class="sub" style="margin-top:0">The cloud can't see your local network. Run the local agent on your own Mac/Linux — <b>read-only, nothing uploaded</b>.</p>
+    <pre class="cmd"><span class="c"># download, read it, then run</span>
+curl -O https://crosstalk-agent.vercel.app/crosscheck-local.sh
+less crosscheck-local.sh
+bash crosscheck-local.sh</pre>
+  </div>
+
+  <h2>③ verify a signed report</h2>
+  <div class="card">
+    <p class="sub" style="margin-top:0">Paste a CROSSCHECK <code>receipt</code> JSON to check it's authentic and untampered.</p>
+    <div class="row2"><textarea id="i_rcpt" placeholder='{"issuer":"crosscheck", ... ,"sig":"..."}'></textarea><button onclick="verify()" style="font-family:var(--mono);background:var(--aqua);color:var(--bg);border:1px solid var(--aqua);border-radius:7px;padding:.6rem 1rem;cursor:pointer">Verify</button></div>
+    <div id="vout" class="rcpt"></div>
+  </div>
+
+  <h2>④ scan the room</h2>
+  <div class="card"><button onclick="room()" style="font-family:var(--mono);background:transparent;color:var(--aqua);border:1px solid var(--aqua);border-radius:7px;padding:.6rem 1rem;cursor:pointer">↯ Live room observability</button> <span class="sub">passive — sends zero traffic.</span><div id="rout"></div></div>
+
+  <div class="scope">⚠ scope: non-destructive recon + misconfig + agent red-teaming. No exploitation, no flooding. Only scan assets you own or are authorized to test.</div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+function fill(id,v){$("#"+id).value=v;}
+function gc(g){return "g"+g;}
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+let LAST=null;
+async function run(mode){
+  const map={card:"i_card",web:"i_web",infra:"i_infra"};
+  const u=$("#"+map[mode]).value.trim(); if(!u){$("#"+map[mode]).focus();return;}
+  const ep=mode==="web"?"/api/scan?probe="+encodeURIComponent(u):mode==="infra"?"/api/infra?domain="+encodeURIComponent(u):"/api/scan?summary=1&url="+encodeURIComponent(u);
+  $("#out").innerHTML='<div class="loading">scanning '+esc(u)+' ('+mode+') …</div>';
+  try{
+    const d=await (await fetch(ep)).json();
+    if(d.error){$("#out").innerHTML='<div class="card"><b>'+esc(d.error)+'</b></div>';return;}
+    LAST=d.receipt||null;
+    const c=d.counts||{};
+    const fs=(d.findings||[]).map(f=>`<div class="f"><span class="lvl ${f.level}">${f.level}</span><div><b>${esc(f.title)}</b>${f.detail?`<div class="det">${esc(f.detail)}</div>`:""}${f.fix?`<div class="fix">→ fix: ${esc(f.fix)}</div>`:""}</div></div>`).join("");
+    const rc=d.receipt?`<div class="rcpt">🔏 signed receipt <span class="badge">${esc(d.receipt.sig.slice(0,18))}…</span> <a href="#" onclick="putRcpt();return false">verify ↓</a></div>`:"";
+    $("#out").innerHTML=`<div class="card">
+      <div class="sc"><div class="score ${gc(d.grade)}">${d.score}<span style="font-size:1.1rem">/100 · ${d.grade}</span></div>
+      <div style="font-family:var(--mono);font-size:.82rem;color:var(--muted)">${esc(d.name||d.target||"")}<br>${c.pass||0} pass · ${c.warn||0} warn · ${c.fail||0} fail · mode:${mode}</div></div>
+      ${d.summary?`<p class="sub">${esc(d.summary)}</p>`:""}${rc}<div class="findings">${fs}</div></div>`;
+  }catch(e){$("#out").innerHTML='<div class="card"><b>scan failed</b></div>';}
+}
+function putRcpt(){ if(LAST){$("#i_rcpt").value=JSON.stringify(LAST);$("#i_rcpt").scrollIntoView({behavior:"smooth"});} }
+async function verify(){
+  let r; try{r=JSON.parse($("#i_rcpt").value);}catch{ $("#vout").innerHTML='<span style="color:var(--red)">not valid JSON</span>';return;}
+  $("#vout").textContent="verifying…";
+  try{const d=await (await fetch("/api/verify",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({receipt:r})})).json();
+    $("#vout").innerHTML=d.valid?`<span class="badge">✓ VALID</span> ${esc(d.reason)} · ${esc(JSON.stringify(d.attests))}`:`<span style="color:var(--red)">✗ ${esc(d.reason)}</span>`;
+  }catch{$("#vout").textContent="verify failed";}
+}
+async function room(){
+  $("#rout").innerHTML='<div class="loading">reading the wire…</div>';
+  try{const d=await (await fetch("/api/scan?mode=room")).json();const t=d.totals||{};
+    const busy=(d.busiest||[]).slice(0,8).map(x=>`<div class="f"><span class="lvl info">${x.kind}</span><div><b>${esc(x.id)}</b> <span class="det">out ${x.callsMade} · in ${x.callsRecv} · reach ${x.reachPct==null?"–":x.reachPct+"%"}</span></div></div>`).join("");
+    $("#rout").innerHTML=`<div style="margin-top:.7rem"><div class="rcpt">${t.agents} agents · ${t.calls} calls · ${t.completes} completed · ${(d.unreachable||[]).length} ghosts</div><div class="findings">${busy}</div></div>`;
+  }catch{$("#rout").textContent="room scan failed";}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CROSSCHECK — the trust layer for the agent web</title>
+<meta name="description" content="Audit any A2A agent for conformance, security, and skill truthfulness. Observe agent networks passively. CROSSCHECK is the trust layer for agent-to-agent — built at VCN #36.">
+<meta name="theme-color" content="#060a10">
+<meta property="og:title" content="CROSSCHECK — the trust layer for the agent web">
+<meta property="og:description" content="Trust, but verify. Audit any A2A agent card; observe agent networks. Free, no SDK.">
+<link rel="alternate" type="application/json" href="/.well-known/agent-card.json" title="Agent Card">
+<style>
+  :root{
+    --bg:#060a10; --fg:#e8f0f4; --muted:rgba(232,240,244,.6);
+    --aqua:#2de2c6; --blue:#4aa8ff; --amber:#ffcf4d; --red:#ff3366; --jade:#5ef0a8;
+    --line:rgba(232,240,244,.13); --surf:rgba(232,240,244,.035);
+    --mono:"SF Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 clamp(1rem,5vw,2rem)}
+  a{color:var(--aqua);text-decoration:none}
+  .mono{font-family:var(--mono)}
+  nav{position:sticky;top:0;z-index:9;backdrop-filter:blur(10px);background:rgba(6,10,16,.7);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:1rem;height:54px}
+  nav .brand{font-family:var(--mono);font-weight:700;letter-spacing:.02em}
+  nav .brand .c{color:var(--aqua)}
+  nav .sp{flex:1}
+  nav a{font-family:var(--mono);font-size:.82rem;color:var(--muted)}
+  nav a:hover{color:var(--aqua)}
+  .eyebrow{font-family:var(--mono);font-size:.76rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted)}
+  .eyebrow .dot{color:var(--aqua)}
+  section{padding:clamp(3rem,8vw,6rem) 0;border-bottom:1px solid var(--line)}
+  h1{font-size:clamp(2.6rem,9vw,5.5rem);font-weight:850;letter-spacing:-.035em;line-height:.95;margin:.6rem 0 0}
+  h1 .c{color:var(--aqua)}
+  .tag{font-size:clamp(1.15rem,3vw,1.6rem);color:var(--muted);max-width:30ch;margin:1.1rem 0 0;line-height:1.35}
+  h2{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;letter-spacing:-.02em;margin:0 0 .4rem}
+  .lead{color:var(--muted);max-width:60ch}
+  .cta{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.8rem}
+  .btn{font-family:var(--mono);font-size:.9rem;font-weight:600;letter-spacing:.03em;padding:.8rem 1.2rem;border-radius:9px;cursor:pointer;border:1px solid var(--aqua);background:var(--aqua);color:var(--bg)}
+  .btn.ghost{background:transparent;color:var(--aqua)}
+  /* live widget */
+  .widget{margin-top:2.4rem;border:1px solid var(--line);background:var(--surf);border-radius:14px;padding:1.2rem}
+  .wlabel{font-family:var(--mono);font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.6rem}
+  .row{display:flex;gap:.5rem;flex-wrap:wrap}
+  input{flex:1;min-width:240px;background:#03060a;border:1px solid var(--line);color:var(--fg);font-family:var(--mono);font-size:.88rem;padding:.7rem .8rem;border-radius:8px}
+  .chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.6rem}
+  .chip{font-family:var(--mono);font-size:.74rem;color:var(--blue);background:var(--surf);border:1px solid var(--line);padding:.32rem .55rem;border-radius:999px;cursor:pointer}
+  #res{margin-top:1rem}
+  .sc{display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+  .score{font-family:var(--mono);font-weight:800;font-size:2.6rem;line-height:1}
+  .gA{color:var(--jade)}.gB{color:var(--aqua)}.gC{color:var(--amber)}.gD{color:#ff9a3d}.gF{color:var(--red)}
+  .findings{margin-top:.8rem;display:flex;flex-direction:column;gap:.4rem}
+  .f{display:grid;grid-template-columns:auto 1fr;gap:.6rem;padding:.5rem .6rem;background:#03060a;border:1px solid var(--line);border-radius:7px;font-size:.88rem}
+  .lvl{font-family:var(--mono);font-size:.64rem;font-weight:700;text-transform:uppercase;padding:.18em .45em;border-radius:4px;height:fit-content}
+  .lvl.pass{color:var(--jade);border:1px solid var(--jade)}.lvl.fail{color:var(--red);border:1px solid var(--red)}
+  .lvl.warn{color:var(--amber);border:1px solid var(--amber)}.lvl.info{color:var(--blue);border:1px solid var(--blue)}
+  .f .det{color:var(--muted);font-size:.82rem}
+  .loading{color:var(--amber);font-family:var(--mono);font-size:.85rem}
+  /* grids */
+  .g3{display:grid;gap:1rem;grid-template-columns:1fr;margin-top:1.6rem}
+  @media(min-width:760px){.g3{grid-template-columns:repeat(3,1fr)}}
+  .card{border:1px solid var(--line);background:var(--surf);border-radius:12px;padding:1.2rem}
+  .card .k{font-family:var(--mono);font-size:.74rem;text-transform:uppercase;letter-spacing:.1em;color:var(--aqua)}
+  .card h3{margin:.4rem 0 .3rem;font-size:1.15rem}
+  .card p{margin:0;color:var(--muted);font-size:.9rem}
+  .card.bad .k{color:var(--red)} .card.warn .k{color:var(--amber)}
+  .pill{font-family:var(--mono);font-size:.72rem;border:1px solid var(--line);border-radius:5px;padding:.1em .45em}
+  /* architecture */
+  .arch{font-family:var(--mono);font-size:.8rem;line-height:1.5;background:#03060a;border:1px solid var(--line);border-radius:12px;padding:1.2rem;overflow:auto;color:var(--muted);white-space:pre}
+  .arch b{color:var(--aqua)} .arch .y{color:var(--amber)} .arch .g{color:var(--jade)}
+  .feat{display:grid;gap:.5rem;grid-template-columns:1fr;margin-top:1rem}
+  @media(min-width:680px){.feat{grid-template-columns:1fr 1fr}}
+  .feat div{font-size:.9rem;color:var(--muted)} .feat b{color:var(--fg)}
+  code{font-family:var(--mono);background:var(--surf);border:1px solid var(--line);padding:.08em .35em;border-radius:4px;font-size:.85em}
+  pre.cmd{font-family:var(--mono);font-size:.82rem;background:#03060a;border:1px solid var(--line);border-radius:10px;padding:1rem;overflow:auto;color:#cfe}
+  pre.cmd .c{color:rgba(232,240,244,.4)}
+  footer{padding:3rem 0;color:var(--muted);font-family:var(--mono);font-size:.82rem}
+  .status{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--mono);font-size:.8rem;border:1px solid var(--line);background:var(--surf);padding:.4rem .7rem;border-radius:7px;margin-top:1.4rem}
+  .led{width:.55em;height:.55em;border-radius:50%;background:var(--aqua);box-shadow:0 0 8px var(--aqua);animation:p 2s infinite}
+  @keyframes p{50%{opacity:.4}}
+</style>
+</head>
+<body>
+<nav><div class="wrap">
+  <span class="brand"><span class="c">CROSS</span>CHECK</span>
+  <span class="sp"></span>
+  <a href="#audit">audit</a><a href="#arch">architecture</a><a href="/map">live map</a>
+  <a href="/probe">dashboard →</a>
+</div></nav>
+
+<!-- HERO -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow"><span class="dot">●</span> THE TRUST LAYER FOR THE AGENT WEB · VCN #36</div>
+    <h1><span class="c">Trust,</span><br>but verify.</h1>
+    <p class="tag">Audit any A2A agent for conformance, security, and skills that actually work. Observe agent networks live.</p>
+    <div class="cta">
+      <button class="btn" onclick="document.getElementById('u').focus();location.hash='audit'">Audit an agent</button>
+      <a class="btn ghost" href="/probe">Scan a room ↯</a>
+    </div>
+    <div class="status"><span class="led"></span><span id="live">checking the line…</span></div>
+  </div>
+</section>
+
+<!-- LIVE AUDIT WIDGET -->
+<section id="audit">
+  <div class="wrap">
+    <h2>Audit live</h2>
+    <p class="lead">Paste any agent-card URL. CROSSCHECK fetches the card, calls <code>message/send</code>, probes the security posture, and checks whether advertised skills actually exist — then grades it.</p>
+    <div class="widget">
+      <div class="wlabel">agent-card url</div>
+      <div class="row">
+        <input id="u" placeholder="https://agent.example.com/.well-known/agent-card.json"/>
+        <button class="btn" onclick="audit()">Audit</button>
+      </div>
+      <div class="chips">
+        <span class="chip" onclick="setu(this)">https://crosstalk-agent.vercel.app/.well-known/agent-card.json</span>
+        <span class="chip" onclick="setu(this)">https://vcn-36-crosstalk.vercel.app/.well-known/agent-card.json</span>
+        <span class="chip" onclick="setu(this)">https://www.immersivecommons.com/.well-known/agent-card.json</span>
+      </div>
+      <div id="res"></div>
+    </div>
+  </div>
+</section>
+
+<!-- THE PROBLEM (real findings) -->
+<section>
+  <div class="wrap">
+    <h2>The agent web is full of cards that lie</h2>
+    <p class="lead">As agents go A2A, discovery is the easy part. Whether the thing behind the card is conformant, secure, and honest is the hard part — and nobody's checking. Real findings from tonight's room:</p>
+    <div class="g3">
+      <div class="card bad"><div class="k">grade D · 68</div><h3>The workshop's own deck</h3><p>Advertises an A2A card, but its <code>url</code> isn't a JSON-RPC route — <code>message/send</code> returns 405 HTML. The agent that teaches A2A isn't callable.</p></div>
+      <div class="card warn"><div class="k">grade B · 90</div><h3>A production agent surface</h3><p>Live and conformant, but <span class="pill">open by default</span> — no security scheme declared. Fine for public reads, a loaded gun if it touches data.</p></div>
+      <div class="card"><div class="k">observability</div><h3>Ghost agents</h3><p>Passive wire analysis reveals nodes that get <b>called but never answer</b> — "the web is full of agents no agent can reach," now measured.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- THREE PILLARS -->
+<section id="how">
+  <div class="wrap">
+    <h2>Three things, one trust layer</h2>
+    <div class="g3">
+      <div class="card"><div class="k">01 · audit</div><h3>Active conformance scan</h3><p>Discovery, required fields, the open-by-default trap, real <code>message/send</code> → Task check, auth enforcement, and skill truthfulness. A 0–100 score with fixes.</p></div>
+      <div class="card"><div class="k">02 · observe</div><h3>Passive network observability</h3><p>Reads a registry's live wire to compute reachability, reply rates, the busiest nodes, ghosts, and the crosstalk graph — sending zero traffic.</p></div>
+      <div class="card"><div class="k">03 · switchboard</div><h3>The live agent</h3><p>A pull-based A2A agent that fronts the service in any room: <code>audit &lt;url&gt;</code>, <code>meet &lt;goal&gt;</code>, <code>roundtable</code>. The reference implementation, and the client.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section id="arch">
+  <div class="wrap">
+    <h2>Architecture</h2>
+    <p class="lead">Zero npm dependencies. Pure Vercel serverless functions + raw <code>fetch</code>. Deploys in seconds; nothing to run on a laptop.</p>
+    <div class="arch">  caller / browser / another agent
+            │
+            ▼   https (CORS open for discovery)
+  ┌────────────────────────────────────────────┐
+  │  Vercel edge  ·  <b>crosstalk-agent</b>            │
+  │                                            │
+  │  <b>/.well-known/agent-card.json</b>  → /api/card  <span class="g">(public)</span>
+  │  <b>/api/a2a</b>     JSON-RPC message/send  <span class="y">(bearer-gated)</span>
+  │  <b>/api/scan</b>    CROSSCHECK engine       <span class="g">(SSRF-guarded)</span>
+  │                  · card audit · room observe │
+  │  <b>/api/worker</b>  pull-only responder     <span class="y">(cron-secret)</span>
+  │  <b>/_shared.js</b>  LLM · room client · feed │
+  └────────────────────────────────────────────┘
+            │                       │
+            ▼                       ▼
+   GLM-4.6 (Anthropic-      A2A room registry
+   compatible gateway)      (discover · call · feed)</div>
+    <div class="feat">
+      <div><b>Security.</b> Bearer-gated invocation (constant-time), SSRF allow-list on audits, 16KB body cap, secrets in env only, HSTS + nosniff.</div>
+      <div><b>Conformance.</b> Speaks A2A v1.0.0 — JSON-RPC 2.0, agent card at the well-known path, Task objects, typed errors.</div>
+      <div><b>LLM.</b> Provider-agnostic <code>/v1/messages</code>; runs on GLM-4.6 via the IC/Z.AI gateway, falls back gracefully with no key.</div>
+      <div><b>Cost.</b> Zero dependencies, stateless functions, passive observability — scales to a whole registry without sending a message.</div>
+    </div>
+  </div>
+</section>
+
+<!-- USE IT -->
+<section>
+  <div class="wrap">
+    <h2>Use it in one line</h2>
+    <pre class="cmd"><span class="c"># audit any agent — public, no key</span>
+curl "https://crosstalk-agent.vercel.app/api/scan?url=&lt;agent-card-url&gt;&summary=1"
+
+<span class="c"># observe a live room — zero traffic sent</span>
+curl "https://crosstalk-agent.vercel.app/api/scan?mode=room"
+
+<span class="c"># or just ask switchboard in the room: "audit &lt;url&gt;"  ·  "meet &lt;what you build&gt;"</span></pre>
+  </div>
+</section>
+
+<!-- LOCAL AGENT -->
+<section>
+  <div class="wrap">
+    <h2>Run the local agent — check your own machine</h2>
+    <p class="lead">The cloud audits public things. Some risks only a process on <em>your</em> machine can see: WiFi encryption, firewall, listening ports, sharing services, LAN context. The local agent checks them — <b>read-only, your machine only, nothing uploaded</b>.</p>
+    <pre class="cmd"><span class="c"># download, READ it (good hygiene for a security tool), then run — no curl|bash</span>
+curl -O https://crosstalk-agent.vercel.app/crosscheck-local.sh
+less crosscheck-local.sh
+bash crosscheck-local.sh</pre>
+    <div class="feat">
+      <div><b>WiFi.</b> Flags open / WEP / weak encryption on the network you're on.</div>
+      <div><b>Host posture.</b> Firewall, stealth mode, SIP, sharing services (SSH/Screen/SMB).</div>
+      <div><b>Exposure.</b> Services listening on all interfaces instead of localhost.</div>
+      <div><b>Private.</b> No active scan of other devices; results stay in your terminal.</div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  CROSSCHECK · built at Vibe Coding Nights #36 · A2A v1.0.0 · zero deps on Vercel<br>
+  the conformance, security &amp; observability layer for agent-to-agent.
+</div></footer>
+
+<script>
+const $=s=>document.querySelector(s);
+function setu(el){$("#u").value=el.textContent.trim();audit();}
+function gc(g){return "g"+g;}
+function esc(s){return String(s==null?"":s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+async function audit(){
+  const u=$("#u").value.trim(); if(!u){location.hash='audit';return;}
+  $("#res").innerHTML='<div class="loading">scanning '+esc(u)+' …</div>';
+  try{
+    const d=await (await fetch("/api/scan?summary=1&url="+encodeURIComponent(u))).json();
+    if(d.error){$("#res").innerHTML='<div class="f"><span class="lvl fail">err</span><div>'+esc(d.error)+'</div></div>';return;}
+    const c=d.counts||{};
+    const fs=(d.findings||[]).map(f=>`<div class="f"><span class="lvl ${f.level}">${f.level}</span><div><b>${esc(f.title)}</b>${f.detail?`<div class="det">${esc(f.detail)}</div>`:""}</div></div>`).join("");
+    $("#res").innerHTML=`<div class="sc"><div class="score ${gc(d.grade)}">${d.score}<span style="font-size:1.1rem">/100 · ${d.grade}</span></div>
+      <div class="mono" style="font-size:.82rem;color:var(--muted)">${esc(d.name||"")}<br>${c.pass||0} pass · ${c.warn||0} warn · ${c.fail||0} fail · ${d.metrics.invokeLatencyMs??"–"}ms</div></div>
+      ${d.summary?`<p class="lead" style="margin-top:.7rem">${esc(d.summary)}</p>`:""}<div class="findings">${fs}</div>`;
+  }catch(e){$("#res").innerHTML='<div class="f"><span class="lvl fail">err</span><div>scan failed</div></div>';}
+}
+fetch("/.well-known/agent-card.json").then(r=>r.json()).then(c=>{$("#live").textContent="200 OK · "+c.name+" · live";}).catch(()=>{$("#live").textContent="offline";});
+</script>
+</body>
+</html>

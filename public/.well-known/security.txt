@@ -1,0 +1,7 @@
+Contact: https://github.com/Tommycode3/crosscheck-a2a/security/advisories/new
+Expires: 2027-06-10T00:00:00.000Z
+Preferred-Languages: en, it
+Canonical: https://crosstalk-agent.vercel.app/.well-known/security.txt
+Policy: https://crosstalk-agent.vercel.app/
+# CROSSCHECK — responsible disclosure welcome. This project is a non-destructive
+# security auditor for the agent web; report any issue you find in it here.
